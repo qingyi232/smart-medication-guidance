@@ -1,0 +1,479 @@
+================================================================================
+    基于智能终端用药指导系统 —— 代码说明文档
+================================================================================
+
+
+================================================================================
+一、技术栈总览
+================================================================================
+
+  前端（Android）：
+    - 语言：Java
+    - 最低 SDK：API 26（Android 8.0）
+    - 目标 SDK：API 34（Android 14）
+    - 网络库：Retrofit2 + OkHttp3
+    - JSON 解析：Gson
+    - 图表库：MPAndroidChart
+    - UI 组件：Material Components、CardView、RecyclerView
+    - 数据绑定：ViewBinding
+
+  后端（Node.js）：
+    - 运行时：Node.js v18+
+    - 框架：Express.js
+    - 数据库：MongoDB + Mongoose ODM
+    - 认证：JWT（jsonwebtoken）
+    - 定时任务：node-cron
+    - 推送：Firebase Cloud Messaging（FCM）
+    - 安全：helmet、express-rate-limit
+    - 数据验证：express-validator
+    - HTTP 客户端：axios（调用 ML 服务）
+
+  AI 服务（Python）：
+    - 框架：Flask + flask-cors
+    - 机器学习：scikit-learn（RandomForest、GradientBoosting）
+    - 数据处理：pandas、numpy
+    - 模型持久化：joblib
+
+
+================================================================================
+二、后端 API 接口文档
+================================================================================
+
+  基础地址：http://localhost:3000/api
+  认证方式：Bearer Token（在 Header 中添加 Authorization: Bearer <token>）
+
+  ────────────────────────────────────────────────────────────────────────────
+  2.1  认证模块 /api/auth
+  ────────────────────────────────────────────────────────────────────────────
+
+  POST   /auth/register        用户注册
+         请求体：{ username, password, realName?, phone?, age?, gender? }
+         响应：{ success, message, data: { token, user } }
+
+  POST   /auth/login            用户登录
+         请求体：{ username, password }
+         响应：{ success, data: { token, user } }
+
+  GET    /auth/profile          获取个人档案（需认证）
+         响应：{ success, data: { user } }
+
+  PUT    /auth/profile          更新个人档案（需认证）
+         请求体：{ realName?, phone?, age?, gender?, chronicDiseases?,
+                   bmi?, sleepHours?, socialSupport?, emergencyContact? }
+         响应：{ success, data: { user } }
+
+  PUT    /auth/change-password  修改密码（需认证）
+         请求体：{ oldPassword, newPassword }
+         响应：{ success, message }
+
+  PUT    /auth/fcm-token        更新 FCM 推送令牌（需认证）
+         请求体：{ fcmToken }
+
+  ────────────────────────────────────────────────────────────────────────────
+  2.2  药品管理模块 /api/medications（需认证）
+  ────────────────────────────────────────────────────────────────────────────
+
+  POST   /medications                  添加药品
+         请求体：{ name, dosage, dosageUnit?, frequency, scheduleTimes[],
+                   startDate, endDate?, timing?, indication?, precautions?,
+                   reminderEnabled?, reminderAdvanceMinutes?,
+                   reminderType?, reminderRepeatCount? }
+
+  GET    /medications                  获取药品列表
+         查询参数：?search=关键词&isActive=true&page=1&limit=20
+
+  GET    /medications/:id              获取药品详情
+
+  PUT    /medications/:id              更新药品
+
+  DELETE /medications/:id              删除药品
+
+  POST   /medications/interaction-check  药品交互作用检查
+         请求体：{ medicationNames: ["药品A", "药品B"] }
+         响应：{ success, data: { hasInteraction, interactions[] } }
+
+  ────────────────────────────────────────────────────────────────────────────
+  2.3  服药记录模块 /api/logs（需认证）
+  ────────────────────────────────────────────────────────────────────────────
+
+  POST   /logs                  记录服药
+         请求体：{ medicationId, status, stressLevel?, wellBeingScore?,
+                   missedReason?, sideEffects?, notes? }
+
+  GET    /logs                  获取服药记录
+         查询参数：?page=1&limit=20&startDate=&endDate=&status=
+
+  GET    /logs/today            获取今日服药计划
+         响应：{ success, data: { schedule[], summary } }
+
+  GET    /logs/adherence        获取依从性统计
+         查询参数：?days=7
+         响应：{ success, data: { adherenceRate, taken, missed, ... } }
+
+  GET    /logs/export           导出服药记录
+         查询参数：?days=30
+
+  ────────────────────────────────────────────────────────────────────────────
+  2.4  风险评估模块 /api/risk（需认证）
+  ────────────────────────────────────────────────────────────────────────────
+
+  POST   /risk/assess           执行 AI 风险评估
+         响应：{ success, data: { assessment: {
+                   riskScore, riskLevel, probabilities,
+                   riskFactors[], interventions[], features,
+                   mlModelUsed } } }
+
+  GET    /risk/latest           获取最新评估结果
+
+  GET    /risk/history          获取评估历史
+         查询参数：?limit=20
+
+  PUT    /risk/:id/outcome      更新干预效果反馈
+         请求体：{ outcome: "followed" | "not_followed" }
+
+  ────────────────────────────────────────────────────────────────────────────
+  2.5  用药知识库模块 /api/medication-info（需认证）
+  ────────────────────────────────────────────────────────────────────────────
+
+  GET    /medication-info              获取知识库列表
+         查询参数：?search=关键词&category=分类
+
+  GET    /medication-info/:id          获取药品详细信息
+
+  ────────────────────────────────────────────────────────────────────────────
+  2.6  ML 预测服务 API（Python Flask，端口 5000）
+  ────────────────────────────────────────────────────────────────────────────
+
+  GET    /health                健康检查
+  POST   /predict               风险预测
+         请求体：{ features: { age, gender, stress_level, ... 共23个特征 } }
+         响应：{ risk_level, risk_score, probabilities, risk_factors,
+                 interventions, model_info }
+
+
+================================================================================
+三、数据库模型说明（MongoDB Collections）
+================================================================================
+
+  ────────────────────────────────────────────────────────────────────────────
+  3.1  User（用户表）
+  ────────────────────────────────────────────────────────────────────────────
+
+  字段名              类型        说明
+  ─────────────────────────────────────────────────
+  username            String      用户名（唯一，3-20字符）
+  password            String      密码（bcrypt 加密存储）
+  realName            String      真实姓名
+  phone               String      手机号
+  age                 Number      年龄
+  gender              String      性别（male/female/other）
+  chronicDiseases     [String]    慢性病列表
+  bmi                 Number      BMI 指数
+  sleepHours          Number      日均睡眠时长
+  socialSupport       Number      社会支持度（0-10）
+  stressLevel         Number      压力等级（1-10）
+  activityLevel       String      活动水平
+  liverFunction       String      肝功能（normal/mild/severe）
+  kidneyFunction      String      肾功能
+  educationLevel      String      教育水平
+  comorbidities       Number      合并症数量
+  emergencyContact    Object      紧急联系人 { name, phone, relationship }
+  fcmToken            String      Firebase 推送令牌
+  isActive            Boolean     账号是否激活
+
+  ────────────────────────────────────────────────────────────────────────────
+  3.2  Medication（药品表）
+  ────────────────────────────────────────────────────────────────────────────
+
+  字段名                  类型        说明
+  ─────────────────────────────────────────────────
+  user                    ObjectId    关联用户
+  name                    String      药品名称
+  dosageForm              String      剂型（tablet/capsule/liquid 等）
+  dosage                  String      剂量
+  dosageUnit              String      单位（mg/ml/g 等）
+  frequency               String      频率（once_daily/twice_daily 等）
+  scheduleTimes           [String]    服药时间列表（如 ["08:00","20:00"]）
+  timing                  String      服药时机（before_meal/after_meal 等）
+  startDate               Date        开始日期
+  endDate                 Date        结束日期
+  isActive                Boolean     是否启用
+  indication              String      适应症
+  precautions             String      注意事项
+  reminderEnabled         Boolean     是否启用提醒
+  reminderAdvanceMinutes  Number      提前提醒分钟数
+  reminderType            String      提醒方式（notification/alarm/silent）
+  reminderRepeatCount     Number      重复提醒次数
+
+  ────────────────────────────────────────────────────────────────────────────
+  3.3  MedicationLog（服药记录表）
+  ────────────────────────────────────────────────────────────────────────────
+
+  字段名              类型        说明
+  ─────────────────────────────────────────────────
+  user                ObjectId    关联用户
+  medication          ObjectId    关联药品
+  scheduledTime       Date        计划服药时间
+  actualTime          Date        实际服药时间
+  status              String      状态（taken/missed/skipped/late/pending）
+  missedReason        String      漏服原因（forgot/busy/side_effects 等）
+  stressLevel         Number      当时压力值（1-10）
+  wellBeingScore      Number      身体感觉（1-5）
+  sideEffects         String      副作用描述
+  notes               String      备注
+  reminderReceived    Boolean     是否收到提醒
+  responseTimeMinutes Number      提醒响应时间（分钟）
+
+  ────────────────────────────────────────────────────────────────────────────
+  3.4  RiskAssessment（风险评估表）
+  ────────────────────────────────────────────────────────────────────────────
+
+  字段名              类型        说明
+  ─────────────────────────────────────────────────
+  user                ObjectId    关联用户
+  riskScore           Number      风险评分（0-100）
+  riskLevel           String      风险等级（low/medium/high）
+  probabilities       Object      三分类概率 { low, medium, high }
+  riskFactors         [Object]    关键风险因素 [{ feature, value, importance }]
+  features            Object      23维特征快照
+  interventions       [Object]    干预策略 [{ type, message }]
+  mlModelUsed         Boolean     是否使用了 ML 模型
+  outcome             String      干预效果（followed/not_followed/pending）
+  assessmentDate      Date        评估时间
+
+  ────────────────────────────────────────────────────────────────────────────
+  3.5  MedicationInfo（药品知识库表）
+  ────────────────────────────────────────────────────────────────────────────
+
+  字段名              类型        说明
+  ─────────────────────────────────────────────────
+  name                String      药品名称
+  genericName         String      通用名
+  category            String      分类
+  description         String      药品描述
+  usage               String      用法用量
+  sideEffects         [String]    常见副作用
+  contraindications   [String]    禁忌症
+  interactions        [String]    药物相互作用
+  storage             String      储存条件
+  precautions         String      注意事项
+
+  系统启动时自动导入 8 种常见药品的知识数据（种子数据）。
+
+
+================================================================================
+四、Android 前端代码结构说明
+================================================================================
+
+  ────────────────────────────────────────────────────────────────────────────
+  4.1  Activities（页面）
+  ────────────────────────────────────────────────────────────────────────────
+
+  LoginActivity           登录页面
+  RegisterActivity        注册页面
+  MainActivity            主页（今日计划、依从率、风险概览）
+  AddMedicationActivity   添加/编辑药品
+  MedicationDetailActivity 药品详情
+  ProfileActivity         个人健康档案
+  ChangePasswordActivity  修改密码
+  StatisticsActivity      统计图表（柱状图、折线图、饼图）
+  RiskDetailActivity      AI 风险评估详情
+  MedicationInfoActivity  用药知识库
+  MedicationLogHistoryActivity 服药记录历史
+
+  ────────────────────────────────────────────────────────────────────────────
+  4.2  Adapters（适配器）
+  ────────────────────────────────────────────────────────────────────────────
+
+  ScheduleAdapter         今日服药计划列表
+  MedicationAdapter       药品列表
+  LogHistoryAdapter       服药记录历史列表
+  RiskHistoryAdapter      风险评估历史列表
+  MedicationInfoAdapter   知识库药品列表
+
+  ────────────────────────────────────────────────────────────────────────────
+  4.3  Network（网络层）
+  ────────────────────────────────────────────────────────────────────────────
+
+  ApiService.java         Retrofit 接口定义（所有 API 端点）
+  RetrofitClient.java     Retrofit 单例客户端（自动附加 Token）
+
+  ────────────────────────────────────────────────────────────────────────────
+  4.4  Utils（工具类）
+  ────────────────────────────────────────────────────────────────────────────
+
+  TokenManager.java       Token 存储管理（SharedPreferences）
+  CacheManager.java       离线数据缓存管理
+
+
+================================================================================
+五、后端代码结构说明
+================================================================================
+
+  ────────────────────────────────────────────────────────────────────────────
+  5.1  Controllers（控制器）
+  ────────────────────────────────────────────────────────────────────────────
+
+  authController.js           用户认证（注册/登录/档案管理/改密码）
+  medicationController.js     药品 CRUD + 交互作用检查
+  medicationLogController.js  服药记录 + 今日计划 + 依从性统计 + 导出
+  riskController.js           AI 风险评估 + 特征提取 + ML 服务调用
+  medicationInfoController.js 知识库查询 + 种子数据初始化
+
+  ────────────────────────────────────────────────────────────────────────────
+  5.2  Models（数据模型）
+  ────────────────────────────────────────────────────────────────────────────
+
+  User.js                 用户模型（含 bcrypt 密码加密钩子）
+  Medication.js           药品模型
+  MedicationLog.js        服药记录模型
+  RiskAssessment.js       风险评估模型
+  MedicationInfo.js       药品知识库模型
+
+  ────────────────────────────────────────────────────────────────────────────
+  5.3  Middleware（中间件）
+  ────────────────────────────────────────────────────────────────────────────
+
+  auth.js                 JWT 认证中间件（验证 Token、提取用户信息）
+  errorHandler.js         全局错误处理（Mongoose 验证错误、重复键等）
+
+  ────────────────────────────────────────────────────────────────────────────
+  5.4  Services（服务）
+  ────────────────────────────────────────────────────────────────────────────
+
+  cronScheduler.js        定时任务调度器，包含三个 CronJob：
+                          - 每分钟：检查服药提醒（支持提前提醒）
+                          - 每小时：检测漏服并标记
+                          - 每天凌晨2点：自动执行全用户风险评估
+
+
+================================================================================
+六、AI 风险预测模型说明
+================================================================================
+
+  ────────────────────────────────────────────────────────────────────────────
+  6.1  模型概述
+  ────────────────────────────────────────────────────────────────────────────
+
+  模型类型：RandomForest（随机森林）集成学习分类器
+  训练数据：Kaggle「IoT-Based Chronic Medication Adherence Dataset」中的 medication_adherence.csv
+            （与数据集页 programmer3/iot-based-chronic-medication-adherence-dataset 一致）
+            默认放在项目根目录；可通过环境变量 ML_DATA_CSV 指定 CSV 绝对路径。
+            训练命令：在 ml_service 目录执行 python train_model.py
+  训练样本量：约 2800 条事件级记录（由脚本按患者与时间窗聚合为与后端一致的 23 维特征）
+  特征维度：23 维（与 backend riskController.extractFeatures 对齐）
+  分类任务：二分类，标签为数据集中的 future_non_adherence（未来是否可能不依从）
+  推理展示：Flask 将「低/高」两档概率映射到前端；中风险概率在兼容展示中可为 0（旧版三分类模型若仍存在则显示三档概率）
+  说明：重新训练后测试集指标会随数据与随机种子变化，以训练脚本输出及 models/training_meta.pkl 为准
+
+  ────────────────────────────────────────────────────────────────────────────
+  6.2  23 维特征列表
+  ────────────────────────────────────────────────────────────────────────────
+
+  编号  特征名                    说明                    来源
+  ────────────────────────────────────────────────────────────────────
+  1     age                       年龄                    用户注册
+  2     gender                    性别                    用户注册
+  3     education_level           教育水平                用户档案
+  4     chronic_disease_count     慢性病数量              用户档案
+  5     comorbidities             合并症数量              用户档案
+  6     medication_count          用药种类数              药品列表统计
+  7     liver_function            肝功能                  用户档案
+  8     kidney_function           肾功能                  用户档案
+  9     adherence_rate_7d         7日依从率               服药记录计算
+  10    adherence_rate_30d        30日依从率              服药记录计算
+  11    missed_doses_7d           7日漏服次数             服药记录计算
+  12    consecutive_missed        连续漏服次数            服药记录计算
+  13    late_doses_7d             7日迟服次数             服药记录计算
+  14    avg_response_time_min     平均提醒响应时间(分钟)  服药记录计算
+  15    stress_level              压力等级(1-10)          用户档案
+  16    sleep_hours               日均睡眠时长            用户档案
+  17    activity_level            活动水平                用户档案
+  18    social_support            社会支持度(0-10)        用户档案
+  19    bmi                       BMI指数                 用户档案
+  20    forgot_ratio              忘记服药比例            服药记录计算
+  21    busy_ratio                忙碌漏服比例            服药记录计算
+  22    side_effect_ratio         副作用漏服比例          服药记录计算
+  23    side_effect_reported      是否报告副作用          服药记录计算
+
+  ────────────────────────────────────────────────────────────────────────────
+  6.3  特征重要性排名（Top 10）
+  ────────────────────────────────────────────────────────────────────────────
+
+  排名  特征                      重要性（示例，以当前 models/risk_model.pkl 为准）
+  ────────────────────────────────────────
+  1     bmi                       约 0.16
+  2     age                       约 0.15
+  3     sleep_hours               约 0.14
+  4     avg_response_time_min     约 0.14
+  5     social_support            约 0.07
+  6     stress_level              约 0.06
+  7     comorbidities             约 0.06
+  8     activity_level            约 0.06
+  9     medication_count          约 0.04
+  10    chronic_disease_count     约 0.04
+
+  ────────────────────────────────────────────────────────────────────────────
+  6.4  风险评估流程
+  ────────────────────────────────────────────────────────────────────────────
+
+  1) 用户点击"AI 智能风险评估"按钮
+  2) Android 发送 POST /api/risk/assess 请求到 Node.js 后端
+  3) 后端 riskController 从数据库提取用户的 23 维特征
+  4) 后端将特征发送到 Python ML 服务 POST /predict
+  5) Python 服务加载 RandomForest 模型进行预测
+  6) 返回风险等级、概率分布、关键因素、干预策略
+  7) 后端将结果存入 RiskAssessment 集合
+  8) Android 展示完整的 AI 分析结果
+
+  ────────────────────────────────────────────────────────────────────────────
+  6.5  干预策略（基于 Kaggle 数据集验证）
+  ────────────────────────────────────────────────────────────────────────────
+
+  触发条件                    策略类型            干预内容
+  ────────────────────────────────────────────────────────────────────
+  压力高(>=7)                 简化步骤            温水+药片放床头（提升依从性22%）
+  忘记比例高(>30%)            增加预提醒          服药前30分钟额外提醒
+  报告副作用                  药师咨询建议        建议咨询药师调整方案
+  连续漏服(>=2次)             监护人通知          通知健康管理人员
+  睡眠不足(<5小时)            生活方式调整        建议保持7-8小时睡眠
+  忙碌漏服(>30%)              时间调整            建议调整服药时间
+  低依从率(<60%)              激励信息            规律服药降低并发症40%
+
+
+================================================================================
+七、系统功能清单（对照需求文档）
+================================================================================
+
+  编号  功能                          实现状态
+  ────────────────────────────────────────────────────
+  1     用户注册/登录                  ✅ 已实现
+  2     个人健康档案管理               ✅ 已实现（23个字段）
+  3     药品 CRUD 管理                 ✅ 已实现
+  4     服药计划设置                   ✅ 已实现
+  5     定时服药提醒（CronJob）        ✅ 已实现（每分钟检查）
+  6     FCM 推送通知                   ✅ 已实现（需配置 Firebase）
+  7     服药记录（含压力值等特征）     ✅ 已实现
+  8     漏服原因记录                   ✅ 已实现
+  9     依从性统计图表                 ✅ 已实现（7/14/30天）
+  10    AI 风险评估（ML 模型）         ✅ 已实现（RandomForest）
+  11    风险因素分析                   ✅ 已实现（Top 5 特征）
+  12    个性化干预策略                 ✅ 已实现（7种策略）
+  13    干预效果追踪（闭环）           ✅ 已实现
+  14    药品交互作用检查               ✅ 已实现
+  15    用药知识库                     ✅ 已实现（8种药品）
+  16    修改密码                       ✅ 已实现
+  17    数据导出                       ✅ 已实现
+  18    提醒个性化设置                 ✅ 已实现
+  19    紧急联系人管理                 ✅ 已实现
+  20    离线数据缓存                   ✅ 已实现
+  21    API 安全（Rate Limiting）      ✅ 已实现
+  22    输入校验                       ✅ 已实现
+  23    漏服自动检测（CronJob）        ✅ 已实现（每小时）
+  24    每日自动风险评估（CronJob）    ✅ 已实现（凌晨2点）
+  25    服药记录历史查看               ✅ 已实现
+
+
+================================================================================
+                              文档结束
+================================================================================

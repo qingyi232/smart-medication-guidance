@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxHeight="500dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="服药状态"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp" />
+
+        <RadioGroup
+            android:id="@+id/rgStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rbTaken"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="已服药" />
+
+            <RadioButton
+                android:id="@+id/rbLate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="迟服" />
+
+            <RadioButton
+                android:id="@+id/rbMissed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="漏服" />
+
+            <RadioButton
+                android:id="@+id/rbSkipped"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="跳过" />
+        </RadioGroup>
+
+        <!-- 漏服原因（仅漏服/跳过时显示） -->
+        <LinearLayout
+            android:id="@+id/layoutMissedReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="漏服原因"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/spinnerMissedReason"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:background="@drawable/spinner_bg" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="4dp"
+            android:background="#E0E0E0" />
+
+        <!-- 可折叠的详细数据区域 -->
+        <LinearLayout
+            android:id="@+id/layoutToggleDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="健康数据采集（可选）"
+                android:textColor="@color/primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvToggleArrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▼ 展开"
+                android:textColor="@color/primary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutDetailFields"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+        <!-- 压力等级 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="压力等级 (1-10)"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/spinnerStress"
+                android:layout_width="80dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg" />
+        </LinearLayout>
+
+        <!-- 身体感觉 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="身体感觉 (1差-5好)"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/spinnerWellbeing"
+                android:layout_width="80dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg" />
+        </LinearLayout>
+
+        <!-- 活动状态 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="当前活动状态"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/spinnerActivity"
+                android:layout_width="120dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg" />
+        </LinearLayout>
+
+        <!-- 位置 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="当前位置"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/spinnerLocation"
+                android:layout_width="120dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg" />
+        </LinearLayout>
+
+        <!-- 心率 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="心率 (bpm)"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etHeartRate"
+                android:layout_width="80dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg"
+                android:gravity="center"
+                android:hint="72"
+                android:inputType="number"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 血压 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="血压 (mmHg)"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etBloodPressure"
+                android:layout_width="100dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg"
+                android:gravity="center"
+                android:hint="120/80"
+                android:inputType="text"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 血糖 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="血糖 (mg/dL)"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etBloodGlucose"
+                android:layout_width="80dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg"
+                android:gravity="center"
+                android:hint="100"
+                android:inputType="numberDecimal"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 睡眠 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="昨晚睡眠 (小时)"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etSleepHours"
+                android:layout_width="80dp"
+                android:layout_height="36dp"
+                android:background="@drawable/spinner_bg"
+                android:gravity="center"
+                android:hint="7"
+                android:inputType="numberDecimal"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 副作用 -->
+        <CheckBox
+            android:id="@+id/cbSideEffects"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="感到药物副作用" />
+
+        </LinearLayout><!-- end layoutDetailFields -->
+
+    </LinearLayout>
+</ScrollView>

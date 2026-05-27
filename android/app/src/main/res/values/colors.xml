@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 清新健康主色调 -->
+    <color name="primary">#00897B</color>
+    <color name="primary_dark">#00796B</color>
+    <color name="primary_light">#E0F2F1</color>
+    <color name="accent">#FF7043</color>
+
+    <!-- 文字色 -->
+    <color name="text_primary">#37474F</color>
+    <color name="text_secondary">#78909C</color>
+    <color name="text_hint">#B0BEC5</color>
+
+    <!-- 基础色 -->
+    <color name="white">#FFFFFF</color>
+    <color name="background">#FAFBFC</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="divider">#ECEFF1</color>
+
+    <!-- 状态色 -->
+    <color name="success">#43A047</color>
+    <color name="warning">#FB8C00</color>
+    <color name="danger">#E53935</color>
+    <color name="info">#039BE5</color>
+
+    <!-- 标签背景 -->
+    <color name="tag_bg">#E0F2F1</color>
+    <color name="tag_text">#00897B</color>
+
+    <!-- 渐变起止色 -->
+    <color name="gradient_start">#00897B</color>
+    <color name="gradient_end">#26A69A</color>
+</resources>
